@@ -14,7 +14,7 @@ command -v sox >/dev/null || echo "WARN: sox not found (brew install sox) — re
 echo "========================================"
 echo " 1/4  Backend venv (.venv, Python 3.10)"
 echo "========================================"
-uv venv --python 3.10 .venv
+[ -d .venv ] || uv venv --python 3.10 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 
 echo "========================================"
@@ -31,14 +31,16 @@ echo "========================================"
 # and a stale yt-dlp. We substitute MPS/CPU builds and rebuild fairseq from source.
 cd external/AICoverGen
 V=.venv/bin/python
-uv venv --python 3.10 .venv
+[ -d .venv ] || uv venv --python 3.10 .venv
 
 # fairseq 0.12.2 build prereqs. Order matters: numpy+cython MUST exist before fairseq,
 # and we need a real pip in the venv (uv's builder fails on fairseq's C++ glob).
 uv pip install --python $V "pip<24.1" "setuptools<60" wheel
 uv pip install --python $V "numpy==1.23.5" cython "torch==2.2.2" "torchaudio==2.2.2"
-# Build fairseq with pip (reuses a cached arm64 wheel on re-runs).
-$V -m pip install "fairseq==0.12.2" --no-build-isolation
+# fairseq 0.12.2's PyPI sdist is missing C++ sources (balanced_assignment.cpp),
+# so a clean build fails. Build from the git tag instead (has all sources).
+$V -c "import fairseq" 2>/dev/null && echo "fairseq already installed" || \
+  $V -m pip install --no-build-isolation "fairseq @ git+https://github.com/facebookresearch/fairseq.git@v0.12.2"
 
 # Remaining deps, Mac-substituted:
 #   onnxruntime_gpu -> onnxruntime (CPU)   torch+cu118 -> 2.2.2 (above)
