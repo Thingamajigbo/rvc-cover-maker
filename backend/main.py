@@ -4,6 +4,7 @@ Cover tab is functional (MVP). Training tab arrives in Phase 4-5.
 Progress is polled via GET /api/jobs/{id} (simple + robust for a 1-user local tool).
 """
 import os
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -71,6 +72,33 @@ def create_job(req: CoverRequest):
         raise HTTPException(status_code=400, detail="모델을 선택하세요.")
     job_id = jobs.submit_cover(req.model_dump())
     return {"job_id": job_id}
+
+
+@app.post("/api/jobs/file")
+async def create_job_file(
+    file: UploadFile = File(...),
+    model_name: str = Form(...),
+    pitch: int = Form(0),
+    index_rate: float = Form(0.5),
+    f0_method: str = Form("rmvpe"),
+    protect: float = Form(0.33),
+    rms_mix_rate: float = Form(0.25),
+    output_format: str = Form("wav"),
+):
+    """Cover from an uploaded local audio file (no YouTube — works anywhere)."""
+    if not model_name.strip():
+        raise HTTPException(status_code=400, detail="모델을 선택하세요.")
+    uploads = ROOT / "uploads"
+    uploads.mkdir(exist_ok=True)
+    ext = Path(file.filename or "audio.wav").suffix.lower() or ".wav"
+    src = uploads / f"{uuid.uuid4().hex}{ext}"
+    src.write_bytes(await file.read())
+    params = {
+        "youtube_url": str(src), "model_name": model_name, "pitch": pitch,
+        "index_rate": index_rate, "f0_method": f0_method, "protect": protect,
+        "rms_mix_rate": rms_mix_rate, "output_format": output_format,
+    }
+    return {"job_id": jobs.submit_cover(params)}
 
 
 @app.get("/api/jobs/{job_id}")

@@ -8,6 +8,7 @@ __pycache__/
 datasets/
 models/
 outputs/
+uploads/
 
 # Cloned engines (installed via setup.sh)
 external/RVC-WebUI/

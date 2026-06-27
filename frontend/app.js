@@ -77,16 +77,44 @@ function paintStepper(p, done) {
   });
 }
 
+// ---- source mode (youtube / file) ----
+let coverSrc = "yt";
+document.querySelectorAll(".src-tab").forEach((t) => {
+  t.onclick = () => {
+    coverSrc = t.dataset.src;
+    document.querySelectorAll(".src-tab").forEach((x) => x.classList.toggle("active", x === t));
+    $("srcYt").classList.toggle("hidden", coverSrc !== "yt");
+    $("srcFile").classList.toggle("hidden", coverSrc !== "file");
+  };
+});
+
 // ---- generate ----
 $("generate").onclick = async () => {
-  const body = {
-    youtube_url: $("yt").value.trim(), model_name: $("model").value,
+  const model_name = $("model").value;
+  if (!model_name) return alert("모델을 선택하세요.");
+  const opts = {
     pitch: +$("pitch").value, index_rate: +$("indexRate").value,
     protect: +$("protect").value, rms_mix_rate: +$("rms").value,
     f0_method: $("f0").value, output_format: $("oformat").value,
   };
-  if (!body.youtube_url) return alert("유튜브 링크를 입력하세요.");
-  if (!body.model_name) return alert("모델을 선택하세요.");
+
+  let request;
+  if (coverSrc === "file") {
+    const f = $("coverFile").files[0];
+    if (!f) return alert("음원 파일을 선택하세요.");
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("model_name", model_name);
+    for (const [k, v] of Object.entries(opts)) fd.append(k, v);
+    request = () => api("/api/jobs/file", { method: "POST", body: fd });
+  } else {
+    const youtube_url = $("yt").value.trim();
+    if (!youtube_url) return alert("유튜브 링크를 입력하세요.");
+    request = () => api("/api/jobs", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ youtube_url, model_name, ...opts }),
+    });
+  }
 
   $("generate").disabled = true;
   show("live");
@@ -95,9 +123,7 @@ $("generate").onclick = async () => {
   setProgress(0, "작업 제출 중…");
   $("statusSub").textContent = "커버를 생성하고 있습니다.";
   try {
-    const { job_id } = await api("/api/jobs", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    });
+    const { job_id } = await request();
     currentJob = job_id;
     pollJob(job_id);
   } catch (e) { showError(e.message); $("generate").disabled = false; }

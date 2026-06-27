@@ -59,8 +59,18 @@
         <h3>🎤 입력</h3>
         <div class="card-sub">원곡과 변환할 목소리 모델을 선택합니다.</div>
 
-        <label>유튜브 링크</label>
-        <input type="text" id="yt" placeholder="https://www.youtube.com/watch?v=...">
+        <label>원곡 소스</label>
+        <div class="src-tabs">
+          <button type="button" class="src-tab active" data-src="yt">🔗 유튜브 링크</button>
+          <button type="button" class="src-tab" data-src="file">📁 파일 업로드</button>
+        </div>
+        <div id="srcYt">
+          <input type="text" id="yt" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <div id="srcFile" class="hidden">
+          <input type="file" id="coverFile" accept=".wav,.mp3,.flac,.m4a,.ogg">
+          <small class="hint">내가 가진 음원 (mp3·wav). 저작권 확인 후 개인용으로만.</small>
+        </div>
 
         <label>내 목소리 모델</label>
         <div class="field-row">

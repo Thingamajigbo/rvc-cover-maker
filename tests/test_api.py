@@ -111,6 +111,16 @@ def test_cancel_running_job(monkeypatch):
     assert job["status"] == "cancelled", job
 
 
+def test_cover_from_uploaded_file(monkeypatch):
+    monkeypatch.setattr(jobs, "run_cover", good_fake)
+    r = client.post("/api/jobs/file", data={"model_name": "GOOD"},
+                    files=[("file", ("song.wav", b"RIFFfakewavdata", "audio/wav"))])
+    assert r.status_code == 200, r.text
+    job = _wait(r.json()["job_id"], {"done", "error"})
+    assert job["status"] == "done", job
+    assert job["result"]["url"].startswith("/outputs/")
+
+
 def test_validation_errors():
     assert client.post("/api/jobs", json={"youtube_url": "", "model_name": "M"}).status_code == 400
     assert client.post("/api/jobs", json={"youtube_url": "u", "model_name": ""}).status_code == 400
