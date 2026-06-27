@@ -187,7 +187,7 @@ def run_training(
         code = stream_process(
             [str(ENGINE_PY), "infer/modules/train/train.py", "-e", exp, "-sr", sample_rate,
              "-f0", "1", "-bs", str(batch_size), "-g", "0", "-te", str(epochs), "-se", "5",
-             "-pg", g, "-pd", d, "-l", "0", "-c", "0", "-sw", "1", "-v", version],
+             "-pg", g, "-pd", d, "-l", "1", "-c", "0", "-sw", "1", "-v", version],
             cwd=str(RVC_DIR), env=env, on_line=_train_line,
             on_stall=on_stall, on_resume=on_resume, cancel_event=cancel_event,
             stall_seconds=1200, timeout=72 * 3600,
