@@ -11,8 +11,23 @@ set -e
 cd "$(dirname "$0")"
 
 SCRATCH="${RVC_SCRATCH:-/tmp/rvc_scratch}"
+
+# Cover scratch (separated stems) -> local disk.
 mkdir -p "$SCRATCH/song_output"
 ln -sfn "$SCRATCH/song_output" external/AICoverGen/song_output
+
+# Training scratch (features/checkpoints are GBs) -> local disk. Preserve the
+# shipped mute reference samples (every training run references them).
+RVC="external/RVC-WebUI"
+if [ -d "$RVC" ]; then
+  if [ ! -L "$RVC/logs" ]; then
+    [ -d "$RVC/logs/mute" ] && cp -rn "$RVC/logs/mute" "$RVC/mute_ref" 2>/dev/null || true
+    rm -rf "$RVC/logs"            # was on the network volume; free it
+  fi
+  mkdir -p "$SCRATCH/train_logs"
+  [ -d "$RVC/mute_ref" ] && cp -rn "$RVC/mute_ref" "$SCRATCH/train_logs/mute" 2>/dev/null || true
+  ln -sfn "$SCRATCH/train_logs" "$RVC/logs"
+fi
 
 exec .venv/bin/python -m uvicorn main:app --app-dir backend \
   --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}"
