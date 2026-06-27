@@ -91,11 +91,11 @@ echo "========================================"
 echo " 5/5  Training engine (RVC-WebUI) — shares the AICoverGen venv"
 echo "========================================"
 # Training reuses the AICoverGen venv (same torch/fairseq/faiss + libomp dedup).
-# Only extra dep: PyAV ('av'), used by RVC-WebUI's audio loader.
+# Extra deps: PyAV (audio loader) + tensorboard/X (train.py's SummaryWriter).
 if [ ! -d external/RVC-WebUI/.git ]; then
   git clone --depth 1 https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git external/RVC-WebUI
 fi
-uv pip install --python external/AICoverGen/.venv/bin/python av
+uv pip install --python external/AICoverGen/.venv/bin/python av tensorboard tensorboardX
 # Mac patch: extract_f0_rmvpe.py hardcodes device="cuda".
 git -C external/RVC-WebUI apply --reverse --check "$ROOT/patches/rvc-webui-mac.patch" 2>/dev/null \
   && echo "rvc-webui patch already applied" \

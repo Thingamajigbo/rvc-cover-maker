@@ -26,6 +26,15 @@ COVER_MODELS = ROOT / "external" / "AICoverGen" / "rvc_models"  # where trained 
 SR_NUM = {"40k": 40000, "48k": 48000, "32k": 32000}
 
 
+def _device() -> str:
+    """'cuda' on a GPU server, else 'cpu' (MPS deadlocks the engine, so never mps)."""
+    try:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except Exception:
+        return "cpu"
+
+
 # ---------------- data check (no engine; fully testable) ----------------
 def check_dataset(file_paths: list[Path]) -> dict:
     """Inspect training audio: total length, silence ratio, clipping, sample rate.
@@ -152,9 +161,9 @@ def run_training(
         _step(["infer/modules/train/extract/extract_f0_rmvpe.py", "1", "0", "0", logs, "False"],
               RVC_DIR, env, on_log, cancel_event, "피치추출")
 
-        # 3) extract features (cpu)
+        # 3) extract features (GPU when available; CPU on Mac/no-CUDA)
         prog(*_TRAIN_STEPS["feature"])
-        _step(["infer/modules/train/extract_feature_print.py", "cpu", "1", "0", "0", logs, version, "False"],
+        _step(["infer/modules/train/extract_feature_print.py", _device(), "1", "0", "0", logs, version, "False"],
               RVC_DIR, env, on_log, cancel_event, "feature추출")
 
         # 4) train — first build filelist.txt + config.json (what click_train does;
