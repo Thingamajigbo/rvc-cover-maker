@@ -4,6 +4,7 @@ Cover tab is functional (MVP). Training tab arrives in Phase 4-5.
 Progress is polled via GET /api/jobs/{id} (simple + robust for a 1-user local tool).
 """
 import os
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -93,6 +94,7 @@ async def create_job_file(
     ext = Path(file.filename or "audio.wav").suffix.lower() or ".wav"
     src = uploads / f"{uuid.uuid4().hex}{ext}"
     src.write_bytes(await file.read())
+    src = _ensure_wav(src)
     params = {
         "youtube_url": str(src), "model_name": model_name, "pitch": pitch,
         "index_rate": index_rate, "f0_method": f0_method, "protect": protect,
@@ -134,6 +136,21 @@ DATASETS = ROOT / "datasets"
 _AUDIO_EXT = (".wav", ".mp3", ".flac", ".m4a", ".ogg")
 
 
+def _ensure_wav(path: Path) -> Path:
+    """Transcode non-wav uploads to wav via ffmpeg. soundfile (data check) can't
+    decode mp3/m4a, so normalize everything to wav on arrival."""
+    if path.suffix.lower() == ".wav":
+        return path
+    wav = path.with_suffix(".wav")
+    try:
+        subprocess.run(["ffmpeg", "-y", "-i", str(path), str(wav)],
+                       check=True, capture_output=True)
+        path.unlink(missing_ok=True)
+        return wav
+    except Exception:
+        return path  # leave original; downstream may still handle it
+
+
 class TrainRequest(BaseModel):
     model_name: str
     epochs: int = 100
@@ -163,7 +180,7 @@ async def train_check(name: str = Form(...), files: list[UploadFile] = File(...)
             continue
         p = dest / fn
         p.write_bytes(await f.read())
-        saved.append(p)
+        saved.append(_ensure_wav(p))
     if not saved:
         raise HTTPException(status_code=400, detail="오디오 파일(.wav/.mp3 등)이 없습니다.")
     return train_mod.check_dataset(saved)
