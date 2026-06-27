@@ -12,6 +12,7 @@ numpy==1.26.4
 # Training: dataset audio analysis (data check) + faiss retrieval index build.
 soundfile==0.14.0
 faiss-cpu==1.8.0
+packaging>=23  # faiss imports packaging.version.Version
 
 # torch is used by our device detection AND shared with the engines.
 # On Apple Silicon the default wheels include the MPS (Metal) backend.
