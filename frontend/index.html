@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resona · AI 보이스 커버 스튜디오</title>
+  <meta name="description" content="내 목소리 모델로 어떤 노래든 커버로. 유튜브 링크 하나로 보컬 분리부터 음성 변환, 믹싱까지.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="bg-orbs"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+
+<nav>
+  <a class="brand" href="#top"><span class="dot"></span>Resona</a>
+  <div class="links">
+    <a href="#studio">스튜디오</a>
+    <a href="#features">기능</a>
+    <a href="#pricing">요금</a>
+  </div>
+  <div class="spacer"></div>
+  <div class="status-pill" id="statusPill"><span class="led"></span><span id="statusText">연결 중…</span></div>
+</nav>
+
+<div id="top"></div>
+
+<!-- HERO -->
+<header class="hero">
+  <span class="eyebrow">🎙️ RVC 기반 · 100% 로컬 실행 · 내 데이터는 내 PC에</span>
+  <h1>내 목소리로,<br><span class="grad-text">모든 노래를 커버하다.</span></h1>
+  <p class="lead">유튜브 링크 하나면 끝. 보컬 분리 · AI 음성 변환 · 믹싱까지 한 화면에서.
+    UVR과 Audacity를 오갈 필요 없이, 클릭 한 번으로 완성된 커버를 받으세요.</p>
+  <div class="cta-row">
+    <a class="btn btn-primary btn-lg" href="#studio">무료로 시작하기</a>
+    <a class="btn btn-ghost btn-lg" href="#features">작동 방식 보기</a>
+  </div>
+  <div class="trust">
+    <span><b>4단계</b> 자동 파이프라인</span>
+    <span><b>RMVPE</b> 고정밀 피치</span>
+    <span><b>LRCLIB</b> 가사 자동 동기화</span>
+  </div>
+</header>
+
+<!-- STUDIO -->
+<section id="studio">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>스튜디오</h2>
+      <p>커버를 만들거나, 내 목소리 모델을 학습하세요.</p>
+    </div>
+    <div class="studio-tabs">
+      <button class="studio-tab active" data-panel="cover">🎤 커버 만들기</button>
+      <button class="studio-tab" data-panel="train">🎓 목소리 학습</button>
+    </div>
+
+    <div id="coverPanel">
+    <div class="studio-grid">
+      <!-- INPUT -->
+      <div class="card">
+        <h3>🎤 입력</h3>
+        <div class="card-sub">원곡과 변환할 목소리 모델을 선택합니다.</div>
+
+        <label>유튜브 링크</label>
+        <input type="text" id="yt" placeholder="https://www.youtube.com/watch?v=...">
+
+        <label>내 목소리 모델</label>
+        <div class="field-row">
+          <select id="model"></select>
+          <button class="btn btn-ghost icon-btn" id="reloadModels" title="새로고침">↻</button>
+          <button class="btn btn-ghost icon-btn" id="openUpload">＋</button>
+        </div>
+
+        <div class="upload-box hidden" id="uploadBox">
+          <label style="margin-top:0">모델 이름</label>
+          <input type="text" id="upName" placeholder="my-voice">
+          <label>.pth (+ .index) 또는 .zip</label>
+          <input type="file" id="upFiles" multiple accept=".pth,.index,.zip">
+          <div class="field-row" style="margin-top:12px">
+            <button class="btn btn-primary" id="doUpload">업로드</button>
+            <button class="btn btn-ghost" id="cancelUpload">취소</button>
+          </div>
+          <div class="hint" id="upMsg" style="margin-top:8px"></div>
+        </div>
+
+        <label>피치 조절 <span class="hint">(옥타브 · 남↔여 보통 ±1)</span></label>
+        <div class="slider-row">
+          <input type="range" id="pitch" min="-12" max="12" value="0">
+          <span class="pill-val" id="pitchVal">0</span>
+        </div>
+
+        <details class="adv">
+          <summary>고급 옵션</summary>
+          <div class="grid2">
+            <div><label style="margin-top:8px">인덱스 비율</label><div class="slider-row"><input type="range" id="indexRate" min="0" max="1" step="0.05" value="0.5"><span class="pill-val" id="indexRateVal">0.5</span></div></div>
+            <div><label style="margin-top:8px">protect</label><div class="slider-row"><input type="range" id="protect" min="0" max="0.5" step="0.01" value="0.33"><span class="pill-val" id="protectVal">0.33</span></div></div>
+            <div><label style="margin-top:8px">rms mix</label><div class="slider-row"><input type="range" id="rms" min="0" max="1" step="0.05" value="0.25"><span class="pill-val" id="rmsVal">0.25</span></div></div>
+            <div><label style="margin-top:8px">피치 추출</label><select id="f0"><option value="rmvpe" selected>rmvpe (권장)</option><option value="mangio-crepe">mangio-crepe</option></select></div>
+            <div><label style="margin-top:8px">출력 형식</label><select id="oformat"><option value="wav" selected>wav</option><option value="mp3">mp3</option></select></div>
+          </div>
+        </details>
+
+        <div class="notice">⚠️ 변환 결과물의 사용 책임은 본인에게 있습니다. 개인·비공개 용도로만 사용하세요.</div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="generate" style="margin-top:18px">✨ 커버 생성</button>
+      </div>
+
+      <!-- STATUS / RESULT -->
+      <div class="card">
+        <h3>📊 진행 상황</h3>
+        <div class="card-sub" id="statusSub">대기 중입니다.</div>
+
+        <div class="stepper" id="stepper">
+          <div class="step" data-s="0"><div class="bub">1</div>다운로드</div>
+          <div class="step" data-s="1"><div class="bub">2</div>보컬 분리</div>
+          <div class="step" data-s="2"><div class="bub">3</div>RVC 변환</div>
+          <div class="step" data-s="3"><div class="bub">4</div>믹싱</div>
+          <div class="step" data-s="4"><div class="bub">✓</div>완료</div>
+        </div>
+
+        <div id="liveArea" class="hidden">
+          <div class="status-line"><span id="stepText">…</span><span class="pct" id="pct">0%</span></div>
+          <div class="progress-outer"><div class="progress-inner" id="bar"></div></div>
+          <div class="stall-banner" id="stallBanner">⏳ 출력이 잠시 멈춰 있습니다 (무거운 변환 중). 계속 대기하거나 취소할 수 있어요.</div>
+          <div class="field-row" style="margin-top:14px">
+            <button class="btn btn-danger btn-block" id="cancelBtn">작업 취소</button>
+          </div>
+          <details class="logs"><summary>엔진 로그 보기</summary><div class="logbox" id="log"></div></details>
+        </div>
+
+        <div id="placeholder" class="placeholder">
+          <div class="big">🎧</div>
+          아직 생성된 커버가 없습니다.<br>왼쪽에서 링크와 모델을 선택하고 생성하세요.
+        </div>
+
+        <div id="errorArea" class="hidden">
+          <div class="notice" style="background:rgba(255,107,129,.1);border-color:rgba(255,107,129,.35);color:var(--err)">
+            <span id="errText"></span>
+          </div>
+          <button class="btn btn-ghost btn-block" id="retryBtn" style="margin-top:12px">다시 시도</button>
+        </div>
+
+        <div id="resultArea" class="hidden">
+          <div class="result-title" id="resultTitle"></div>
+          <audio id="player" controls></audio>
+          <a id="download" download><button class="btn btn-primary btn-block">⬇ 다운로드</button></a>
+          <div class="lyric-head">
+            <input type="text" id="lrcTitle" placeholder="곡 제목">
+            <input type="text" id="lrcArtist" placeholder="아티스트">
+            <button class="btn btn-ghost icon-btn" id="lrcSearch">가사</button>
+          </div>
+          <div class="lrcbox" id="lrcBox" contenteditable="true" spellcheck="false" data-empty="가사가 자동 검색되거나, 여기에 직접 붙여넣으세요."></div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /coverPanel -->
+
+    <!-- ===== TRAIN PANEL ===== -->
+    <div id="trainPanel" class="hidden">
+    <div class="studio-grid">
+      <!-- TRAIN INPUT -->
+      <div class="card">
+        <h3>🎓 학습 데이터</h3>
+        <div class="card-sub">내 목소리 녹음을 올려 나만의 RVC 모델을 만듭니다.</div>
+
+        <label>모델 이름</label>
+        <input type="text" id="tModelName" placeholder="my-voice">
+
+        <label>목소리 데이터 (wav·mp3 여러 개)</label>
+        <input type="file" id="tFiles" multiple accept=".wav,.mp3,.flac,.m4a,.ogg">
+        <small class="hint">권장: 잡음·에코 없는 깨끗한 음질 10~30분</small>
+
+        <div class="field-row" style="margin-top:14px">
+          <button class="btn btn-ghost btn-block" id="tCheck">데이터 검사</button>
+        </div>
+        <div id="tCheckResult" class="check-result hidden"></div>
+
+        <details class="adv">
+          <summary>학습 옵션</summary>
+          <div class="grid2">
+            <div><label style="margin-top:8px">Epoch (100~300)</label><input type="text" id="tEpochs" value="100"></div>
+            <div><label style="margin-top:8px">샘플레이트</label><select id="tSr"><option value="40k" selected>40k</option><option value="48k">48k</option><option value="32k">32k</option></select></div>
+            <div><label style="margin-top:8px">Batch size</label><input type="text" id="tBatch" value="4"></div>
+          </div>
+        </details>
+
+        <div class="notice">⚠️ 학습은 GPU 권장 — CPU에선 매우 느립니다. <b>본인 목소리 데이터만</b> 사용하세요.</div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="tStart" style="margin-top:18px" disabled>🎓 학습 시작</button>
+        <small class="hint" id="tStartHint" style="display:block;margin-top:8px;text-align:center">먼저 데이터를 검사하세요.</small>
+      </div>
+
+      <!-- TRAIN STATUS -->
+      <div class="card">
+        <h3>📊 학습 진행</h3>
+        <div class="card-sub" id="tStatusSub">데이터를 올리고 검사하세요.</div>
+
+        <div id="tLiveArea" class="hidden">
+          <div class="status-line"><span id="tStepText">…</span><span class="pct" id="tPct">0%</span></div>
+          <div class="progress-outer"><div class="progress-inner" id="tBar"></div></div>
+          <div class="stall-banner" id="tStallBanner">⏳ 출력이 잠시 멈춰 있습니다 (무거운 연산 중). 계속 대기하거나 취소할 수 있어요.</div>
+          <div class="field-row" style="margin-top:14px"><button class="btn btn-danger btn-block" id="tCancel">학습 취소</button></div>
+          <details class="logs"><summary>엔진 로그 보기</summary><div class="logbox" id="tLog"></div></details>
+        </div>
+
+        <div id="tPlaceholder" class="placeholder"><div class="big">🎓</div>아직 학습된 모델이 없습니다.<br>왼쪽에서 데이터를 올리고 학습을 시작하세요.</div>
+
+        <div id="tErrorArea" class="hidden">
+          <div class="notice" style="background:rgba(255,107,129,.1);border-color:rgba(255,107,129,.35);color:var(--err)"><span id="tErrText"></span></div>
+        </div>
+
+        <div id="tResultArea" class="hidden">
+          <div class="result-title">✅ 모델 생성 완료</div>
+          <div class="card-sub" id="tResultName"></div>
+          <p class="muted" style="font-size:13.5px">커버 탭의 모델 드롭다운에서 바로 선택할 수 있습니다.</p>
+          <button class="btn btn-primary btn-block" id="tGoCover">커버 만들러 가기 →</button>
+        </div>
+      </div>
+    </div>
+    </div><!-- /trainPanel -->
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-head"><h2>왜 Resona인가</h2><p>복잡한 도구 체인을 하나의 매끄러운 흐름으로.</p></div>
+    <div class="feature-grid">
+      <div class="feature"><div class="ic">⚡</div><h3>원클릭 파이프라인</h3><p>다운로드 → 보컬/MR 분리 → RVC 변환 → 믹싱까지 자동. 중간 파일 관리 불필요.</p></div>
+      <div class="feature"><div class="ic">🔒</div><h3>완전 로컬</h3><p>음원도 모델도 내 컴퓨터에서만 처리됩니다. 업로드도, 계정도 필요 없습니다.</p></div>
+      <div class="feature"><div class="ic">🎚️</div><h3>정밀 제어</h3><p>피치·인덱스·protect·rms를 슬라이더로. 로봇음을 줄이고 자연스러움을 끌어올리세요.</p></div>
+      <div class="feature"><div class="ic">🛡️</div><h3>견고한 엔진</h3><p>스톨 감지·취소·자동 타임아웃. 멈춘 작업도 안전하게 잡아냅니다.</p></div>
+      <div class="feature"><div class="ic">📝</div><h3>가사 동기화</h3><p>LRCLIB에서 싱크 가사를 자동 검색. 없으면 직접 붙여넣어 편집.</p></div>
+      <div class="feature"><div class="ic">🎓</div><h3>내 목소리 학습</h3><p>곧 추가될 학습 탭으로 나만의 RVC 모델을 직접 만들 수 있습니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head"><h2>요금제</h2><p>로컬 실행은 언제나 무료. 더 빠른 처리는 GPU로.</p></div>
+    <div class="price-grid">
+      <div class="price">
+        <div class="tier">Local</div><div class="amt">₩0<span> / 영원히</span></div>
+        <ul><li>무제한 커버 생성</li><li>모델 업로드</li><li>가사 동기화</li><li>내 PC에서 실행 (CPU)</li></ul>
+        <a class="btn btn-ghost btn-block" href="#studio">지금 사용</a>
+      </div>
+      <div class="price featured">
+        <div class="tier">Pro · GPU</div><div class="amt">₩19,000<span> / 월</span></div>
+        <ul><li>Local의 모든 기능</li><li>GPU 가속 — 곡당 수십 초</li><li>내 목소리 학습</li><li>우선 처리 큐</li></ul>
+        <a class="btn btn-primary btn-block" href="#studio">업그레이드</a>
+      </div>
+      <div class="price">
+        <div class="tier">Studio</div><div class="amt">₩49,000<span> / 월</span></div>
+        <ul><li>Pro의 모든 기능</li><li>배치 처리</li><li>고해상도 스템 추출</li><li>API 액세스</li></ul>
+        <a class="btn btn-ghost btn-block" href="#studio">문의하기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p class="disc">Resona는 개인 창작·학습 용도의 로컬 도구입니다. 생성된 커버의 저작권 및 사용에 대한 책임은 전적으로 사용자에게 있습니다. 상업적 사용 전 원저작권자의 허락을 확인하세요.</p>
+  <p>© 2026 Resona · 내 목소리로, 모든 노래를.</p>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

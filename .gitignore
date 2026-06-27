@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Project data (large / private)
+datasets/
+models/
+outputs/
+
+# Cloned engines (installed via setup.sh)
+external/RVC-WebUI/
+external/AICoverGen/
+
+# OS
+.DS_Store
+
+# Local tooling
+.claude/

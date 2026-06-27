@@ -1,0 +1,95 @@
+diff --git a/src/main.py b/src/main.py
+index dbc9676..ae026dc 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -192,10 +192,20 @@ def preprocess_song(song_input, mdx_model_params, song_id, is_webui, input_type,
+ 
+ def voice_change(voice_model, vocals_path, output_path, pitch_change, f0_method, index_rate, filter_radius, rms_mix_rate, protect, crepe_hop_length, is_webui):
+     rvc_model_path, rvc_index_path = get_rvc_model(voice_model, is_webui)
+-    device = 'cuda:0'
+-    config = Config(device, True)
+-    hubert_model = load_hubert(device, config.is_half, os.path.join(rvc_models_dir, 'hubert_base.pt'))
+-    cpt, version, net_g, tgt_sr, vc = get_vc(device, config.is_half, config, rvc_model_path)
++    import os as _os, torch
++    # MPS deadlocks in this older RVC code on Apple Silicon (hangs at 0% CPU).
++    # Force CPU on non-CUDA. Override with RVC_FORCE_CPU=0 to experiment with MPS.
++    if _os.environ.get('RVC_FORCE_CPU', '1') == '1':
++        torch.backends.mps.is_available = lambda: False
++    if torch.cuda.is_available():
++        device, is_half = 'cuda:0', True
++    elif torch.backends.mps.is_available():
++        device, is_half = 'mps', False
++    else:
++        device, is_half = 'cpu', False
++    config = Config(device, is_half)
++    hubert_model = load_hubert(device, is_half, os.path.join(rvc_models_dir, 'hubert_base.pt'))
++    cpt, version, net_g, tgt_sr, vc = get_vc(device, is_half, config, rvc_model_path)
+ 
+     # convert main vocals
+     rvc_infer(rvc_index_path, index_rate, vocals_path, output_path, pitch_change, f0_method, cpt, version, net_g, filter_radius, tgt_sr, rms_mix_rate, protect, crepe_hop_length, vc, hubert_model)
+diff --git a/src/mdx.py b/src/mdx.py
+index 575c456..eae9bea 100644
+--- a/src/mdx.py
++++ b/src/mdx.py
+@@ -236,11 +236,16 @@ class MDX:
+ 
+ 
+ def run_mdx(model_params, output_dir, model_path, filename, exclude_main=False, exclude_inversion=False, suffix=None, invert_suffix=None, denoise=False, keep_orig=True, m_threads=2):
+-    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+-
+-    device_properties = torch.cuda.get_device_properties(device)
+-    vram_gb = device_properties.total_memory / 1024**3
+-    m_threads = 1 if vram_gb < 8 else 2
++    if torch.cuda.is_available():
++        device = torch.device('cuda:0')
++        processor = 0
++        vram_gb = torch.cuda.get_device_properties(device).total_memory / 1024**3
++        m_threads = 1 if vram_gb < 8 else 2
++    else:
++        # No CUDA: onnxruntime here is CPU-only, so run MDX separation on CPU.
++        device = torch.device('cpu')
++        processor = -1
++        m_threads = 2
+ 
+     model_hash = MDX.get_hash(model_path)
+     mp = model_params.get(model_hash)
+@@ -253,7 +258,7 @@ def run_mdx(model_params, output_dir, model_path, filename, exclude_main=False,
+         compensation=mp["compensate"]
+     )
+ 
+-    mdx_sess = MDX(model_path, model)
++    mdx_sess = MDX(model_path, model, processor=processor)
+     wave, sr = librosa.load(filename, mono=False, sr=44100)
+     # normalizing input wave gives better output
+     peak = max(np.max(wave), abs(np.min(wave)))
+diff --git a/src/rmvpe.py b/src/rmvpe.py
+index 7e83aa8..40c49bc 100644
+--- a/src/rmvpe.py
++++ b/src/rmvpe.py
+@@ -338,7 +338,12 @@ class RMVPE:
+         self.resample_kernel = {}
+         self.is_half = is_half
+         if device is None:
+-            device = "cuda" if torch.cuda.is_available() else "cpu"
++            if torch.cuda.is_available():
++                device = "cuda"
++            elif torch.backends.mps.is_available():
++                device = "mps"
++            else:
++                device = "cpu"
+         self.device = device
+         self.mel_extractor = MelSpectrogram(
+             is_half, 128, 16000, 1024, 160, None, 30, 8000
+diff --git a/src/rvc.py b/src/rvc.py
+index e7bac31..4bb0407 100644
+--- a/src/rvc.py
++++ b/src/rvc.py
+@@ -68,7 +68,7 @@ class Config:
+         else:
+             print("No supported N-card found, use CPU for inference")
+             self.device = "cpu"
+-            self.is_half = True
++            self.is_half = False
+ 
+         if self.n_cpu == 0:
+             self.n_cpu = cpu_count()

@@ -1,0 +1,46 @@
+diff --git a/infer/lib/train/utils.py b/infer/lib/train/utils.py
+index 765c54c..f6ce8ab 100644
+--- a/infer/lib/train/utils.py
++++ b/infer/lib/train/utils.py
+@@ -235,8 +235,9 @@ def plot_spectrogram_to_numpy(spectrogram):
+     plt.tight_layout()
+ 
+     fig.canvas.draw()
+-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
+-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
++    # matplotlib >=3.10 removed tostring_rgb(); use buffer_rgba() and drop alpha.
++    data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
++    data = data.reshape(fig.canvas.get_width_height()[::-1] + (4,))[:, :, :3]
+     plt.close()
+     return data
+ 
+@@ -266,8 +267,9 @@ def plot_alignment_to_numpy(alignment, info=None):
+     plt.tight_layout()
+ 
+     fig.canvas.draw()
+-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
+-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
++    # matplotlib >=3.10 removed tostring_rgb(); use buffer_rgba() and drop alpha.
++    data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
++    data = data.reshape(fig.canvas.get_width_height()[::-1] + (4,))[:, :, :3]
+     plt.close()
+     return data
+ 
+diff --git a/infer/modules/train/extract/extract_f0_rmvpe.py b/infer/modules/train/extract/extract_f0_rmvpe.py
+index 90b2073..636b8e4 100644
+--- a/infer/modules/train/extract/extract_f0_rmvpe.py
++++ b/infer/modules/train/extract/extract_f0_rmvpe.py
+@@ -49,8 +49,12 @@ class FeatureInput(object):
+                 from infer.lib.rmvpe import RMVPE
+ 
+                 print("Loading rmvpe model")
++                import torch as _t
++                _dev = "cuda" if _t.cuda.is_available() else "cpu"
+                 self.model_rmvpe = RMVPE(
+-                    "assets/rmvpe/rmvpe.pt", is_half=is_half, device="cuda"
++                    "assets/rmvpe/rmvpe.pt",
++                    is_half=(is_half if _dev == "cuda" else False),
++                    device=_dev,
+                 )
+             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+         return f0

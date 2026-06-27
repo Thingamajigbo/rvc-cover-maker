@@ -1,0 +1,19 @@
+# Our backend stack only. The two engines (RVC-WebUI, AICoverGen) bring their
+# own heavy deps via setup.sh — kept separate so engine installs don't churn this.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+requests==2.32.3
+python-dotenv==1.0.1
+
+# numpy<2 keeps the RVC/AICoverGen stack (older code) happy; torch 2.5 is fine with it.
+numpy==1.26.4
+
+# Training: dataset audio analysis (data check) + faiss retrieval index build.
+soundfile==0.14.0
+faiss-cpu==1.8.0
+
+# torch is used by our device detection AND shared with the engines.
+# On Apple Silicon the default wheels include the MPS (Metal) backend.
+torch==2.5.1
+torchaudio==2.5.1
