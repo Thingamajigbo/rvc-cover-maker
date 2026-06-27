@@ -49,10 +49,16 @@ $V -c "import fairseq" 2>/dev/null && echo "fairseq already installed" || \
 uv pip install --python $V \
   "gradio==3.39.0" "gradio_client==0.3.0" \
   "librosa==0.9.1" "scipy==1.11.1" "soundfile==0.12.1" \
-  "onnxruntime" \
   "praat-parselmouth>=0.4.2" "pedalboard==0.7.7" "pydub==0.25.1" "pyworld==0.3.4" \
   "Requests==2.31.0" "torchcrepe==0.0.20" "yt-dlp" "sox==1.4.1" \
   "ffmpeg-python>=0.2.0" "deemix" "faiss-cpu==1.8.0" "tqdm==4.65.0"
+# MDX vocal separation engine: GPU build on CUDA boxes (cuDNN 9 is lent from the
+# backend venv's torch via LD_LIBRARY_PATH at runtime — see aicovergen.py), CPU otherwise.
+if command -v nvidia-smi >/dev/null 2>&1; then
+  uv pip install --python $V onnxruntime-gpu
+else
+  uv pip install --python $V onnxruntime
+fi
 # Re-pin numpy last — some of the above pull it forward off 1.23.5.
 uv pip install --python $V "numpy==1.23.5"
 

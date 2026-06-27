@@ -33,6 +33,14 @@ _ENGINE_ENV = {
     "VECLIB_MAXIMUM_THREADS": "4",
 }
 
+# GPU separation: onnxruntime-gpu needs cuDNN 9, which the engine venv lacks but
+# the backend venv's torch bundles. Lend it via LD_LIBRARY_PATH (no extra install,
+# different soname from the engine torch's cuDNN 8 so they don't clash). No-op
+# off-Linux (the dir won't exist), where separation stays on CPU.
+_CUDNN = ROOT / ".venv/lib/python3.10/site-packages/nvidia/cudnn/lib"
+if _CUDNN.is_dir():
+    _ENGINE_ENV["LD_LIBRARY_PATH"] = f"{_CUDNN}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+
 
 @contextmanager
 def engine_lock(lock_path: Path | None = None):
