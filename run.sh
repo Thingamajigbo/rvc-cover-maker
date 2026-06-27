@@ -33,10 +33,15 @@ relocate ".venv" "venv-backend"
 relocate "external/AICoverGen/.venv" "venv-engine"
 relocate "external/RVC-WebUI/assets" "rvc-webui-assets"
 
-# Rebuild venvs if local disk was wiped (fresh pod). setup.sh installs through the
-# symlinks above, so everything lands on local disk.
+# Rebuild the environment if local disk was wiped (fresh pod). A pod restart clears
+# the container disk, taking the venvs AND the toolchain (uv + apt packages) with it,
+# so reinstall those before setup.sh rebuilds the venvs through the symlinks above.
 if [ ! -x .venv/bin/python ] || [ ! -x external/AICoverGen/.venv/bin/python ]; then
-  echo ">>> venv missing on local disk — running setup.sh (one-time, ~15 min) <<<"
+  echo ">>> rebuilding environment on local disk (one-time, ~15-20 min) <<<"
+  command -v ffmpeg >/dev/null && command -v sox >/dev/null \
+    || { apt-get update -qq && apt-get install -y -qq ffmpeg sox; }
+  command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
   bash setup.sh
 fi
 
