@@ -107,7 +107,7 @@ git -C external/RVC-WebUI apply --reverse --check "$ROOT/patches/rvc-webui-mac.p
   && echo "rvc-webui patch already applied" \
   || git -C external/RVC-WebUI apply "$ROOT/patches/rvc-webui-mac.patch"
 # Pretrained base models for 40k v2 training (+ reuse hubert/rmvpe from cover engine).
-mkdir -p external/RVC-WebUI/assets/pretrained_v2 external/RVC-WebUI/assets/hubert external/RVC-WebUI/assets/rmvpe
+mkdir -p external/RVC-WebUI/assets/pretrained_v2 external/RVC-WebUI/assets/hubert external/RVC-WebUI/assets/rmvpe external/RVC-WebUI/assets/weights
 cp -n external/AICoverGen/rvc_models/hubert_base.pt external/RVC-WebUI/assets/hubert/ 2>/dev/null || true
 cp -n external/AICoverGen/rvc_models/rmvpe.pt external/RVC-WebUI/assets/rmvpe/ 2>/dev/null || true
 HF="https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
