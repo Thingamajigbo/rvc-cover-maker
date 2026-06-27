@@ -14,7 +14,7 @@ command -v sox >/dev/null || echo "WARN: sox not found (brew install sox) — re
 echo "========================================"
 echo " 1/4  Backend venv (.venv, Python 3.10)"
 echo "========================================"
-[ -d .venv ] || uv venv --python 3.10 .venv
+[ -x .venv/bin/python ] || uv venv --python 3.10 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 
 echo "========================================"
@@ -31,7 +31,7 @@ echo "========================================"
 # and a stale yt-dlp. We substitute MPS/CPU builds and rebuild fairseq from source.
 cd external/AICoverGen
 V=.venv/bin/python
-[ -d .venv ] || uv venv --python 3.10 .venv
+[ -x .venv/bin/python ] || uv venv --python 3.10 .venv
 
 # fairseq 0.12.2 build prereqs. Order matters: numpy+cython MUST exist before fairseq,
 # and we need a real pip in the venv (uv's builder fails on fairseq's C++ glob).
