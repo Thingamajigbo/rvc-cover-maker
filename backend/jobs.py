@@ -97,7 +97,10 @@ def cancel(jid: str) -> bool:
 def retry(jid: str) -> str | None:
     with _lock:
         params = _params.get(jid)
-    return submit_cover(params) if params else None
+        kind = _jobs[jid]["kind"] if jid in _jobs else None
+    if not params:
+        return None
+    return submit_train(params) if kind == "train" else submit_cover(params)
 
 
 def _touch(job: dict):

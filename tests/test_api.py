@@ -166,3 +166,17 @@ def test_model_upload_rejects_no_pth():
     assert r.status_code == 400
     import shutil
     shutil.rmtree(jobs.ROOT / "external" / "AICoverGen" / "rvc_models" / name, ignore_errors=True)
+
+
+def test_retry_routes_by_kind(monkeypatch):
+    """retry must resubmit a train job as train, not cover (root-cause regression)."""
+    calls = []
+    monkeypatch.setattr(jobs, "submit_train", lambda p: calls.append("train") or "t1")
+    monkeypatch.setattr(jobs, "submit_cover", lambda p: calls.append("cover") or "c1")
+    with jobs._lock:
+        jobs._jobs["jT"] = {"id": "jT", "kind": "train"}
+        jobs._params["jT"] = {"model_name": "m"}
+        jobs._jobs["jC"] = {"id": "jC", "kind": "cover"}
+        jobs._params["jC"] = {"model_name": "m"}
+    assert jobs.retry("jT") == "t1" and calls[-1] == "train"
+    assert jobs.retry("jC") == "c1" and calls[-1] == "cover"
