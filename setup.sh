@@ -91,6 +91,34 @@ echo " 4/4  Download base models (hubert, rmvpe, MDX)"
 echo "========================================"
 $V src/download_models.py
 
+echo "========================================"
+echo " 4b   Default cover voice: Tom Holland (public demo)"
+echo "========================================"
+# Ship a fresh clone with one ready-to-use voice so the cover tab works out of the
+# box. Public model from AICoverGen's public_models.json. Pure stdlib (no gradio).
+$V - <<'PY'
+import os, urllib.request, zipfile, shutil, glob
+dst = "rvc_models/Tom Holland"
+if glob.glob(os.path.join(dst, "*.pth")):
+    print("Tom Holland already present, skipping"); raise SystemExit
+url = "https://huggingface.co/TJKAI/TomHolland/resolve/main/TomHolland.zip"
+zp = "rvc_models/_th.zip"
+print("downloading Tom Holland...")
+urllib.request.urlretrieve(url, zp)
+os.makedirs(dst, exist_ok=True)
+with zipfile.ZipFile(zp) as zf: zf.extractall(dst)
+os.remove(zp)
+for root, _, files in os.walk(dst):                 # flatten: .pth/.index to top
+    for n in files:
+        if n.endswith((".pth", ".index")):
+            s = os.path.join(root, n); t = os.path.join(dst, n)
+            if s != t: os.rename(s, t)
+for d in os.listdir(dst):                            # drop nested dirs
+    p = os.path.join(dst, d)
+    if os.path.isdir(p): shutil.rmtree(p)
+print("Tom Holland ready:", os.listdir(dst))
+PY
+
 cd "$ROOT"
 
 echo "========================================"
